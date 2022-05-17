@@ -1,0 +1,6 @@
+base:
+ '*':
+  - kafka
+  - zookeeper
+  - java
+
