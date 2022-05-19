@@ -1,0 +1,34 @@
+create_kafka_group:
+  group.present:
+    - name: kafka
+    - gid: 4000
+    - system: True
+
+create_kafka_user:
+  user.present:
+    - name: kafka
+    - home: /home/kafka
+    - shell: /bin/bash
+    - uid: 4000
+    - gid: 4000
+    - groups:
+      - kafka
+
+install_kafka:
+  cmd.run:
+    - names:
+      - cd /home/kafka
+      - wget http://apache.osuosl.org/kafka/3.1.0/kafka_2.13-3.1.0.tgz
+      - tar -xvzf kafka_2.13-3.1.0.tgz
+      - ls
+      - pwd
+      - mv kafka_2.13-3.1.0/* /home/kafka/
+      - rm -rf ./kafka_2.13-3.1.0
+
+create_server_file:
+  file.managed:
+    - name: /home/kafka/config/server.properties
+    - source: salt://install_kafka/files/server.properties
+    - user: kafka
+    - group: kafka
+    - mode: 644

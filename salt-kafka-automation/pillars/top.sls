@@ -1,6 +1,7 @@
 base:
- '*':
-  - kafka
-  - zookeeper
-  - java
-
+  '*':
+    - kafka
+    - zookeeper
+  'salt-master_minion':
+    - kafka
+    - zookeeper

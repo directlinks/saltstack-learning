@@ -1,0 +1,8 @@
+{%- set zookeeper_servers_ = salt['pillar.get']('zookeeper_servers') -%}
+{%- for i in zookeeper_servers_ -%}
+  {%- for j,k in i.items() -%}
+    {%- if salt['cmd.shell']('hostname -i') == k -%}
+{{ j }}
+{%- endif -%}
+{%- endfor -%}
+{%- endfor -%}
