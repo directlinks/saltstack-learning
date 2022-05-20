@@ -44,7 +44,6 @@ create_config:
        
        server.1=10.190.0.2:2788:3788
        server.2=10.190.0.3:2788:3788
-       server.3=localhost:2988:3988
        EOF
 
 #add multi node config ids
