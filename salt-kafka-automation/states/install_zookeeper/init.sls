@@ -1,55 +1,68 @@
+{% set version = salt['pillar.get']('version') %}
+{% set server_port = salt['pillar.get']('server_port') %}
+
 # download and unpack zookeeper
 install_zookeeper:
   cmd.run:
     - names:
       - mkdir -p /opt/zookeeper
-      - wget https://archive.apache.org/dist/zookeeper/zookeeper-3.8.0/apache-zookeeper-3.8.0-bin.tar.gz
-      - mv apache-zookeeper-3.8.0-bin.tar.gz /opt/zookeeper/
-      - tar -zxf /opt/zookeeper/apache-zookeeper-3.8.0-bin.tar.gz -C /opt/zookeeper
-      - ls /opt/zookeeper/apache-zookeeper-3.8.0-bin
-      - mkdir -p /opt/zookeeper/apache-zookeeper-3.8.0-bin/data
-      - rm -rf /opt/zookeeper/apache-zookeeper-3.8.0-bin.tar.gz
+      - wget https://archive.apache.org/dist/zookeeper/zookeeper-{{ version }}/apache-zookeeper-{{ version }}-bin.tar.gz
+      - mv apache-zookeeper-{{ version }}-bin.tar.gz /opt/zookeeper/
+      - tar -zxf /opt/zookeeper/apache-zookeeper-{{ version }}-bin.tar.gz -C /opt/zookeeper
+      - ls /opt/zookeeper/apache-zookeeper-{{ version }}-bin
+      - mkdir -p /opt/zookeeper/apache-zookeeper-{{ version }}-bin/data
+      - rm -rf /opt/zookeeper/apache-zookeeper-{{ version }}-bin.tar.gz
 
 # create zoo.cgf
 create_config:
   cmd.run:
     - name: |
        ls
-       cat << EOF > /opt/zookeeper/apache-zookeeper-3.8.0-bin/conf/zoo.cfg
+       cat << EOF > /opt/zookeeper/apache-zookeeper-{{ version }}-bin/conf/zoo.cfg
        # The number of milliseconds of each tick
-       tickTime=2000
+       tickTime= {{ pillar['conf']['ticktime']}}
 
        # The number of ticks that the initial 
        # synchronization phase can take
-       initLimit=10
+       initLimit={{ pillar['conf']['initlimit']}}
 
        # The number of ticks that can pass between 
        # sending a request and getting an acknowledgement
-       syncLimit=5
+       syncLimit={{ pillar['conf']['synclimit']}}
 
        # the directory where the snapshot is stored.
        # do not use /tmp for storage, /tmp here is just 
        # example sakes.
-       dataDir=/opt/zookeeper/apache-zookeeper-3.8.0-bin/data
+       dataDir={{ pillar['conf']['data_dir']}}
 
        # the port at which the clients will connect
-       clientPort=2181
+       clientPort={{ pillar['client_ports']['clientport'] }}
        admin.serverPort=8081
 
        # the maximum number of client connections.
        # increase this if you need to handle more clients
-       maxClientCnxns=60
+       maxClientCnxns={{ pillar['conf']['max_client_conn']}}
 
        4lw.commands.whitelist=*
-       
-       server.1=10.190.0.2:2788:3788
-       server.2=10.190.0.3:2788:3788
+    
        EOF
+
+#add servers in zoo.cfg
+{% set zookeeper_servers_ = salt['pillar.get']('zookeeper_servers') -%}
+add_servers:
+  cmd.run:
+    - names:
+{% for i in zookeeper_servers_ %}
+  {% for j,k in i.items() %}
+      - echo server.{{ j }}={{ k }}:{{ server_port }}:3788 >> /opt/zookeeper/apache-zookeeper-{{ version }}-bin/conf/zoo.cfg
+  {%- endfor %}
+{%- endfor %}
+
 
 #add multi node config ids
 create_id_file:
   file.managed:
-    - name: /opt/zookeeper/apache-zookeeper-3.8.0-bin/data/myid
+    - name: /opt/zookeeper/apache-zookeeper-{{ version }}-bin/data/myid
     - source: salt://install_zookeeper/files/myid
     - user: root
     - group: root
@@ -60,4 +73,4 @@ create_id_file:
 run_zoo:
   cmd.run:
     - names:
-      - /opt/zookeeper/apache-zookeeper-3.8.0-bin/bin/zkServer.sh start
+      - /opt/zookeeper/apache-zookeeper-{{ version }}-bin/bin/zkServer.sh start
